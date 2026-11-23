@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>기출문제 연습</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --surface: #ffffff; --surface-2: #eef0f3; --text: #1b1f24; --muted: #5d6673;
+    --border: #d9dde3; --accent: #2f5bd3; --accent-text: #ffffff;
+    --ok: #1f8a4c; --ok-bg: #e5f5ec; --bad: #c4352b; --bad-bg: #fbe9e7;
+    --cv: #7a4cc2; --nlp: #0f7f86;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14171b; --surface: #1d2126; --surface-2: #262b31; --text: #e7eaee; --muted: #9aa3ae;
+      --border: #343a42; --accent: #6d8ff0; --accent-text: #0e1116;
+      --ok: #5cc98a; --ok-bg: #173325; --bad: #f07b70; --bad-bg: #3a1f1c;
+      --cv: #b08cf0; --nlp: #4fc4cb;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.6 "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  }
+  main { max-width: 760px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 1.5rem; margin: 0 0 4px; }
+  h2 { font-size: 1.05rem; margin: 28px 0 10px; color: var(--muted); font-weight: 600; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  .muted { color: var(--muted); }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .spacer { flex: 1; }
+  .btn {
+    border: 1px solid var(--border); background: var(--surface); border-radius: 8px; padding: 8px 14px;
+  }
+  .btn:hover:not(:disabled) { border-color: var(--accent); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); font-weight: 600; }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 16px; }
+  .stat b { display: block; font-size: 1.4rem; }
+  .stat span { color: var(--muted); font-size: .85rem; }
+  .modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+  .mode { text-align: left; }
+  .mode b { display: block; }
+  .mode span { color: var(--muted); font-size: .88rem; }
+  .exams { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+  .exam { text-align: left; border-left: 4px solid var(--track); }
+  .exam .t { font-weight: 600; }
+  .exam .s { font-size: .82rem; color: var(--muted); }
+  .opts { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 12px; font-size: .92rem; }
+  .opts label { display: flex; gap: 6px; align-items: center; cursor: pointer; }
+  .tag { font-size: .8rem; font-weight: 600; color: var(--track); }
+  .bar { height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; margin: 10px 0 18px; }
+  .bar > i { display: block; height: 100%; background: var(--accent); transition: width .2s; }
+  .qtitle { font-size: 1.12rem; font-weight: 600; margin: 6px 0 8px; }
+  .desc { white-space: pre-wrap; background: var(--surface-2); border-radius: 8px; padding: 10px 12px; margin: 0 0 12px; }
+  .choices { display: grid; gap: 8px; }
+  .choice {
+    display: flex; gap: 10px; text-align: left; width: 100%;
+    border: 1px solid var(--border); background: var(--surface); border-radius: 10px; padding: 12px;
+  }
+  .choice .n { font-weight: 700; color: var(--muted); min-width: 1.2em; }
+  .choice:hover:not(:disabled) { border-color: var(--accent); }
+  .choice:disabled { cursor: default; }
+  .choice.correct { border-color: var(--ok); background: var(--ok-bg); }
+  .choice.wrong { border-color: var(--bad); background: var(--bad-bg); }
+  .choice .mark { margin-left: auto; font-weight: 700; }
+  .feedback { margin-top: 14px; border-radius: 10px; padding: 12px 14px; border: 1px solid var(--border); background: var(--surface-2); }
+  .feedback .head { font-weight: 700; }
+  .feedback.ok .head { color: var(--ok); }
+  .feedback.bad .head { color: var(--bad); }
+  .feedback p { margin: 6px 0 0; }
+  .score { font-size: 2.6rem; font-weight: 700; margin: 4px 0; }
+  .review { margin-top: 10px; }
+  .review details { border-top: 1px solid var(--border); padding: 10px 0; }
+  .review summary { cursor: pointer; }
+  .review .o { color: var(--ok); font-weight: 700; }
+  .review .x { color: var(--bad); font-weight: 700; }
+  .kbd { font-size: .8rem; color: var(--muted); margin-top: 12px; }
+  @media (max-width: 480px) { .stats { grid-template-columns: 1fr 1fr 1fr; } .stat b { font-size: 1.15rem; } }
+</style>
+</head>
+<body>
+<main id="app"></main>
+<script src="quiz_data.js"></script>
+<script>
+"use strict";
+const EXAMS = window.QUIZ_DATA || [];
+const STORE_KEY = "mc-eval-quiz-v1";
+const CIRCLED = ["①", "②", "③", "④", "⑤"];
+
+// 브라우저 저장소가 막힌 환경(사생활 보호 창 등)에서도 퀴즈 자체는 동작해야 하므로 실패를 삼킨다.
+function loadStore() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY)) || { q: {}, exam: {}, prefs: {} }; }
+  catch { return { q: {}, exam: {}, prefs: {} }; }
+}
+function saveStore() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch {}
+}
+const store = loadStore();
+store.q ||= {}; store.exam ||= {}; store.prefs ||= {};
+
+const ALL = EXAMS.flatMap(e => e.questions.map(q => ({ ...q, exam: e })));
+const byId = new Map(ALL.map(q => [q.id, q]));
+// 공개 배포본(build_quiz_data.py --public)에는 응시 기록이 없으므로 관련 UI를 숨긴다.
+const HAS_ATTEMPT = ALL.some(q => q.userOption != null);
+
+let session = null;
+const app = document.getElementById("app");
+
+function el(tag, attrs = {}, ...children) {
+  const node = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") node.className = v;
+    else if (k === "style") node.style.cssText = v;
+    else if (k.startsWith("on")) node.addEventListener(k.slice(2), v);
+    else if (v !== false && v != null) node.setAttribute(k, v === true ? "" : v);
+  }
+  for (const c of children.flat()) {
+    if (c == null || c === false) continue;
+    node.append(c instanceof Node ? c : document.createTextNode(String(c)));
+  }
+  return node;
+}
+const trackColor = t => `var(--${t === "CV" ? "cv" : "nlp"})`;
+
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function wrongNoteIds() {
+  return ALL.filter(q => store.q[q.id]?.last === "X").map(q => q.id);
+}
+function originalWrongIds() {
+  return ALL.filter(q => q.userOption != null && q.userOption !== q.correct).map(q => q.id);
+}
+
+function startSession(label, ids, examId = null) {
+  if (!ids.length) return;
+  const order = store.prefs.shuffleQ ? shuffle(ids) : ids;
+  session = {
+    label, examId,
+    items: order.map(id => {
+      const q = byId.get(id);
+      return { id, optOrder: store.prefs.shuffleO ? shuffle(q.options.map(o => o.no)) : q.options.map(o => o.no) };
+    }),
+    idx: 0,
+    answers: {},
+  };
+  renderQuiz();
+}
+
+function recordAnswer(q, chosen) {
+  const s = store.q[q.id] ||= { tries: 0, wrong: 0 };
+  s.tries += 1;
+  if (chosen !== q.correct) s.wrong += 1;
+  s.last = chosen === q.correct ? "O" : "X";
+  saveStore();
+}
+
+function renderHome() {
+  session = null;
+  const solved = ALL.filter(q => store.q[q.id]);
+  const tries = solved.reduce((a, q) => a + store.q[q.id].tries, 0);
+  const wrongs = solved.reduce((a, q) => a + store.q[q.id].wrong, 0);
+  const wrongNote = wrongNoteIds();
+  const origWrong = originalWrongIds();
+
+  const toggle = (key, label) => el("label", {},
+    el("input", { type: "checkbox", checked: !!store.prefs[key], onchange: e => { store.prefs[key] = e.target.checked; saveStore(); } }),
+    label);
+
+  const tracks = [...new Set(EXAMS.map(e => e.track))];
+
+  app.replaceChildren(
+    el("h1", {}, "기출문제 연습"),
+    el("div", { class: "muted" }, `CV · NLP 일차별 평가 ${EXAMS.length}회차, ${ALL.length}문항`),
+    el("div", { class: "stats" },
+      el("div", { class: "card stat" }, el("b", {}, `${solved.length}/${ALL.length}`), el("span", {}, "풀어본 문항")),
+      el("div", { class: "card stat" }, el("b", {}, tries ? `${Math.round((1 - wrongs / tries) * 100)}%` : "–"), el("span", {}, "누적 정답률")),
+      el("div", { class: "card stat" }, el("b", {}, wrongNote.length), el("span", {}, "오답노트"))),
+
+    el("h2", {}, "연습 모드"),
+    el("div", { class: "modes" },
+      el("button", { class: "btn card mode", onclick: () => startSession("전체 문항", ALL.map(q => q.id)) },
+        el("b", {}, "전체 문항"), el("span", {}, `${ALL.length}문항 모두`)),
+      el("button", { class: "btn card mode", disabled: !wrongNote.length, onclick: () => startSession("오답노트", wrongNote) },
+        el("b", {}, "오답노트"), el("span", {}, wrongNote.length ? `최근에 틀린 ${wrongNote.length}문항` : "아직 틀린 문항이 없습니다")),
+      HAS_ATTEMPT && el("button", { class: "btn card mode", disabled: !origWrong.length, onclick: () => startSession("실제 응시 때 틀린 문제", origWrong) },
+        el("b", {}, "실제 응시 때 틀린 문제"), el("span", {}, `${origWrong.length}문항`))),
+    el("div", { class: "opts" },
+      toggle("shuffleQ", "문항 순서 섞기"),
+      toggle("shuffleO", "보기 순서 섞기")),
+
+    ...tracks.flatMap(track => [
+      el("h2", {}, track),
+      el("div", { class: "exams" },
+        EXAMS.filter(e => e.track === track).map(e => {
+          const last = store.exam[e.id];
+          return el("button", { class: "btn card exam", style: `--track:${trackColor(e.track)}`,
+              onclick: () => startSession(e.title, e.questions.map(q => q.id), e.id) },
+            el("div", { class: "t" }, e.title),
+            e.score != null && el("div", { class: "s" }, `실제 응시 ${e.score}점`),
+            el("div", { class: "s" }, `${e.questions.length}문항`),
+            el("div", { class: "s" }, last ? `최근 연습 ${last.score}점` : "연습 기록 없음"));
+        }))
+    ]),
+    el("div", { class: "row", style: "margin-top:28px" },
+      el("span", { class: "spacer" }),
+      el("button", { class: "btn", onclick: () => {
+        if (confirm("연습 기록과 오답노트를 모두 지울까요?")) { store.q = {}; store.exam = {}; saveStore(); renderHome(); }
+      } }, "기록 초기화"))
+  );
+}
+
+function renderQuiz() {
+  const { items, idx, answers } = session;
+  const item = items[idx];
+  const q = byId.get(item.id);
+  const chosen = answers[q.id];
+  const answered = chosen != null;
+  const optByNo = new Map(q.options.map(o => [o.no, o]));
+
+  const choices = item.optOrder.map((no, pos) => {
+    const o = optByNo.get(no);
+    let cls = "choice", mark = "";
+    if (answered && no === q.correct) { cls += " correct"; mark = "정답"; }
+    else if (answered && no === chosen) { cls += " wrong"; mark = "선택"; }
+    return el("button", { class: cls, disabled: answered, onclick: () => choose(no) },
+      el("span", { class: "n" }, CIRCLED[pos]), el("span", {}, o.text), mark && el("span", { class: "mark" }, mark));
+  });
+
+  let feedback = null;
+  if (answered) {
+    const ok = chosen === q.correct;
+    const origPos = item.optOrder.indexOf(q.userOption);
+    feedback = el("div", { class: `feedback ${ok ? "ok" : "bad"}` },
+      el("div", { class: "head" }, ok ? "정답입니다" : `오답입니다 · 정답은 ${CIRCLED[item.optOrder.indexOf(q.correct)]}`),
+      q.explanation && el("p", {}, q.explanation),
+      q.userOption != null && el("p", { class: "muted" },
+        `실제 응시 때 선택: ${CIRCLED[origPos]} ${q.userOption === q.correct ? "(정답)" : "(오답)"}`));
+  }
+
+  const isLast = idx === items.length - 1;
+  app.replaceChildren(
+    el("div", { class: "row" },
+      el("b", {}, session.label),
+      el("span", { class: "muted" }, `${idx + 1} / ${items.length}`),
+      el("span", { class: "spacer" }),
+      el("button", { class: "btn", onclick: () => { if (!Object.keys(answers).length || confirm("연습을 그만두고 처음 화면으로 갈까요?")) renderHome(); } }, "나가기")),
+    el("div", { class: "bar" }, el("i", { style: `width:${(Object.keys(answers).length / items.length) * 100}%` })),
+    el("div", { class: "card" },
+      el("div", { class: "tag", style: `--track:${trackColor(q.exam.track)}` }, `${q.exam.title} · ${q.no}번`),
+      el("div", { class: "qtitle" }, q.title),
+      q.description && el("div", { class: "desc" }, q.description),
+      el("div", { class: "choices" }, choices),
+      feedback),
+    el("div", { class: "row", style: "margin-top:14px" },
+      el("button", { class: "btn", disabled: idx === 0, onclick: () => go(-1) }, "이전"),
+      el("span", { class: "spacer" }),
+      el("button", { class: "btn primary", disabled: !answered, onclick: () => isLast ? finish() : go(1) }, isLast ? "결과 보기" : "다음")),
+    el("div", { class: "kbd" }, "키보드: 1–4 보기 선택 · Enter 다음 · ← 이전")
+  );
+}
+
+function choose(no) {
+  const q = byId.get(session.items[session.idx].id);
+  if (session.answers[q.id] != null) return;
+  session.answers[q.id] = no;
+  recordAnswer(q, no);
+  renderQuiz();
+}
+
+function go(delta) {
+  session.idx = Math.min(Math.max(session.idx + delta, 0), session.items.length - 1);
+  renderQuiz();
+  window.scrollTo(0, 0);
+}
+
+function finish() {
+  const { items, answers, examId } = session;
+  const qs = items.map(it => byId.get(it.id));
+  const correct = qs.filter(q => answers[q.id] === q.correct).length;
+  const score = Math.round((correct / qs.length) * 100);
+  if (examId != null) { store.exam[examId] = { score, at: new Date().toISOString() }; saveStore(); }
+  const wrongIds = qs.filter(q => answers[q.id] !== q.correct).map(q => q.id);
+  const label = session.label;
+
+  const optText = (q, no) => q.options.find(o => o.no === no)?.text ?? "–";
+  app.replaceChildren(
+    el("div", { class: "card" },
+      el("div", { class: "muted" }, label),
+      el("div", { class: "score" }, `${score}점`),
+      el("div", {}, `${qs.length}문항 중 ${correct}문항 정답`),
+      el("div", { class: "row", style: "margin-top:14px" },
+        el("button", { class: "btn primary", disabled: !wrongIds.length, onclick: () => startSession(`${label} · 틀린 문제`, wrongIds) }, "틀린 문제만 다시"),
+        el("button", { class: "btn", onclick: () => startSession(label, qs.map(q => q.id), examId) }, "다시 풀기"),
+        el("button", { class: "btn", onclick: renderHome }, "처음으로"))),
+    el("h2", {}, "문항별 결과"),
+    el("div", { class: "card review" },
+      ...qs.map(q => {
+        const ok = answers[q.id] === q.correct;
+        return el("details", { open: !ok },
+          el("summary", {}, el("span", { class: ok ? "o" : "x" }, ok ? "O " : "X "), `${q.exam.title} ${q.no}번 · ${q.title}`),
+          !ok && el("p", {}, el("span", { class: "x" }, "내 답 "), optText(q, answers[q.id])),
+          el("p", {}, el("span", { class: "o" }, "정답 "), optText(q, q.correct)),
+          q.explanation && el("p", { class: "muted" }, q.explanation));
+      }))
+  );
+  session = null;
+  window.scrollTo(0, 0);
+}
+
+document.addEventListener("keydown", e => {
+  if (!session || e.ctrlKey || e.metaKey || e.altKey) return;
+  const item = session.items[session.idx];
+  if (/^[1-9]$/.test(e.key)) {
+    const no = item.optOrder[Number(e.key) - 1];
+    if (no != null) choose(no);
+  } else if (e.key === "Enter" || e.key === "ArrowRight") {
+    if (session.answers[item.id] == null) return;
+    e.preventDefault();
+    session.idx === session.items.length - 1 ? finish() : go(1);
+  } else if (e.key === "ArrowLeft") {
+    go(-1);
+  }
+});
+
+if (!EXAMS.length) {
+  app.replaceChildren(el("div", { class: "card" }, "quiz_data.js 를 불러오지 못했습니다. scripts/build_quiz_data.py 를 먼저 실행하세요."));
+} else {
+  renderHome();
+}
+</script>
+</body>
+</html>

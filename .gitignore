@@ -33,3 +33,7 @@ Thumbs.db
 
 # 사전학습 모델 가중치
 weights/
+
+# 평가 DB에서 생성되는 퀴즈 데이터 (본인 응시 기록 포함, 공개 배포본은 gh-pages 브랜치)
+quiz/quiz_data.js
+*.db
